@@ -130,11 +130,14 @@ export default function CatalogBrowser({
     colors, fabrics, sizes, maxPrice, hideSoldOut, sort,
   ]);
 
+  // True when the slider is at the top of its range, meaning no price limit.
+  const atMaxPrice = maxPrice >= filterOptions.priceMax;
+
   const activeFilterCount =
     categories.length + subcategories.length + occasions.length +
     colors.length + fabrics.length + sizes.length +
     (hideSoldOut ? 1 : 0) +
-    (maxPrice < filterOptions.priceMax ? 1 : 0);
+    (atMaxPrice ? 0 : 1);
 
   return (
     <div className="catalog">
@@ -150,21 +153,35 @@ export default function CatalogBrowser({
         </button>
 
         <div className={filtersOpen ? "filters open" : "filters"}>
-          <div className="filter-group">
-            <h3 style={{ marginTop: 0 }}>Price</h3>
-            <label htmlFor="maxPrice" style={{ fontSize: "0.85rem" }}>
-              Up to ${Number(maxPrice).toLocaleString("en-US")}
-            </label>
-            <input
-              id="maxPrice"
-              type="range"
-              min={filterOptions.priceMin}
-              max={filterOptions.priceMax}
-              step={100}
-              value={maxPrice}
-              onChange={(event) => setMaxPrice(Number(event.target.value))}
-            />
-          </div>
+          {/* The slider runs from $1 to the most expensive item in the
+              catalog, in $1 steps. At the top end it reads "Max" rather than a
+              figure, because at that position nothing is being filtered out
+              and a number there would wrongly suggest a price cap. */}
+          {filterOptions.priceMax > 1 && (
+            <div className="filter-group">
+              <h3 style={{ marginTop: 0 }}>Price</h3>
+              <label htmlFor="maxPrice" style={{ fontSize: "0.85rem" }}>
+                Up to{" "}
+                {atMaxPrice ? "Max" : `$${Number(maxPrice).toLocaleString("en-US")}`}
+              </label>
+              <input
+                id="maxPrice"
+                type="range"
+                min={1}
+                max={filterOptions.priceMax}
+                step={1}
+                /* Screen readers announce this instead of the raw number, so
+                   they match what is shown on screen. */
+                aria-valuetext={
+                  atMaxPrice
+                    ? "Max, no price limit"
+                    : `Up to $${Number(maxPrice).toLocaleString("en-US")}`
+                }
+                value={maxPrice}
+                onChange={(event) => setMaxPrice(Number(event.target.value))}
+              />
+            </div>
+          )}
 
           {!lockedCategory && (
             <CheckboxGroup
